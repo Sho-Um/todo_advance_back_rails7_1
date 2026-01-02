@@ -36,6 +36,19 @@ class TasksController < ApplicationController
     render :stats
   end
 
+  def report
+    stats = Task.stats
+    render json: {
+      totalCount: stats[:total_count],
+      countByStatus: {
+        notStarted: stats[:status_counts][:not_started],
+        inProgress: stats[:status_counts][:in_progress],
+        completed: stats[:status_counts][:completed]
+      },
+      completionRate: stats[:completion_rate].round(1)
+    }
+  end
+
   private
 
   def task_params

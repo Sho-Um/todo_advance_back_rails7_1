@@ -186,4 +186,81 @@ RSpec.describe "Tasks API", type: :request do
       end
     end
   end
+
+  describe 'GET /tasks/report' do
+    context 'タスクが存在しない場合' do
+      it 'ステータスコードが200であること' do
+        get '/tasks/report'
+        expect(response).to have_http_status(200)
+      end
+
+      it '全タスク数が0であること' do
+        get '/tasks/report'
+        json_response = JSON.parse(response.body)
+        expect(json_response['totalCount']).to eq(0)
+      end
+
+      it '完了率が0.0であること' do
+        get '/tasks/report'
+        json_response = JSON.parse(response.body)
+        expect(json_response['completionRate']).to eq(0.0)
+      end
+
+      it 'countByStatusキーが存在すること' do
+        get '/tasks/report'
+        json_response = JSON.parse(response.body)
+        expect(json_response).to have_key('countByStatus')
+      end
+
+      it 'ステータス別タスク数が全て0であること' do
+        get '/tasks/report'
+        json_response = JSON.parse(response.body)
+        expect(json_response['countByStatus']['notStarted']).to eq(0)
+        expect(json_response['countByStatus']['inProgress']).to eq(0)
+        expect(json_response['countByStatus']['completed']).to eq(0)
+      end
+    end
+
+    context 'タスクが存在する場合' do
+      let!(:task1) { create(:task, status: :not_started, genre: genre) }
+      let!(:task2) { create(:task, status: :in_progress, genre: genre) }
+      let!(:task3) { create(:task, status: :completed, genre: genre) }
+
+      it 'ステータスコードが200であること' do
+        get '/tasks/report'
+        expect(response).to have_http_status(200)
+      end
+
+      it 'レスポンスがJSON形式であること' do
+        get '/tasks/report'
+        expect(response.content_type).to match(/application\/json/)
+      end
+
+      it '全タスク数が正しいこと' do
+        get '/tasks/report'
+        json_response = JSON.parse(response.body)
+        expect(json_response['totalCount']).to eq(3)
+      end
+
+      it 'countByStatusキーが存在すること' do
+        get '/tasks/report'
+        json_response = JSON.parse(response.body)
+        expect(json_response).to have_key('countByStatus')
+      end
+
+      it 'ステータス別タスク数が正しいこと' do
+        get '/tasks/report'
+        json_response = JSON.parse(response.body)
+        expect(json_response['countByStatus']['notStarted']).to eq(1)
+        expect(json_response['countByStatus']['inProgress']).to eq(1)
+        expect(json_response['countByStatus']['completed']).to eq(1)
+      end
+
+      it '完了率が小数点1桁で計算されること' do
+        get '/tasks/report'
+        json_response = JSON.parse(response.body)
+        expect(json_response['completionRate']).to eq(33.3)
+      end
+    end
+  end
 end
